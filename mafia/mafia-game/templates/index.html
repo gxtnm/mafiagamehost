@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Players Table</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Players Information</h1>
+    <table id="players-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Player Name</th>
+                <th>Role</th>
+                <th>Fouls</th>
+                <th>Healed</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Player rows will be inserted here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fetch players data from the Flask API
+        fetch('http://127.0.0.1:5000/api/players')
+            .then(response => response.json())
+            .then(players => {
+                const tableBody = document.getElementById('players-table').getElementsByTagName('tbody')[0];
+                
+                players.forEach(player => {
+                    // Create a new row for each player
+                    const row = document.createElement('tr');
+                    
+                    // Create columns for player data
+                    row.innerHTML = `
+                        <td>${player.id}</td>
+                        <td>${player.player_name}</td>
+                        <td>${player.role || 'N/A'}</td>
+                        <td>${player.fouls}</td>
+                        <td>${player.healed}</td>
+                    `;
+                    
+                    // Append the row to the table body
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching player data:', error);
+            });
+    </script>
+</body>
+</html>

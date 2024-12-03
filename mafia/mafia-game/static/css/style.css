@@ -1,0 +1,47 @@
+/* style.css */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f9;
+  text-align: center;
+}
+
+#game-container {
+  margin-top: 50px;
+}
+
+#player-list {
+  margin: 20px;
+}
+
+#game-actions {
+  margin-top: 20px;
+}
+
+#chat-box {
+  margin-top: 20px;
+  height: 200px;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background-color: #fff;
+}
+/* Add a wrapper around the table to enable horizontal scrolling */
+.table-wrapper {
+  overflow-x: auto;   /* Enables horizontal scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
+  max-width: 100%;     /* Ensures the wrapper takes the full width of the container */
+}
+
+table {
+  width: 100%;  /* Ensure the table takes up the full available width */
+  table-layout: fixed; /* Ensures better handling of wide content */
+  border-collapse: collapse; /* Makes sure the table borders are neat */
+}
+
+th, td {
+  padding: 10px;
+  text-align: right;
+  word-wrap: break-word;  /* Ensures text wraps inside cells */
+  max-width: 150px;       /* Optionally, limit column width for better readability */
+}
+

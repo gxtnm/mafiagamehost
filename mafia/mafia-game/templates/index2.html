@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFIA GAME HOST</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 20px;
+            transition: background-color 1s ease;
+        }
+        pre {
+            background-color: #2f2f2f;
+            color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        /* Blackout style */
+        .blackout {
+            background-color: black !important;
+            color: white !important;
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .hidden {
+            display: none;
+        }
+        table {
+            margin-top: 20px;
+            border-collapse: collapse; 
+            width: 100%;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>MAFIA GAME HOST</h1>
+
+    <!-- Show the "Start Mafia Game" button initially -->
+    <div id="start-container">
+        <button id="start-btn" onclick="startGame()">Start Mafia Game</button>
+    </div>
+
+    <div id="mask-container"></div>
+
+    <!-- Show "Reveal First Player" button after game starts -->
+    <div id="next-container" style="display: none;">
+        <button id="next-btn" onclick="revealFirstPlayer()">Reveal First Player</button>
+    </div>
+
+    <!-- Controls for Blackout and Next Player -->
+    <div id="next-player-container" class="hidden">
+        <button id="blackout-btn" onclick="makeBlack()">Make Screen Black</button>
+        <button id="next-player-btn" onclick="nextPlayer()" class="hidden">Next Player</button>
+    </div>
+
+    <!-- Display final roles to the host -->
+    <div id="final-roles" class="hidden">
+        <h2>Final Roles</h2>
+        <div id="roles-container"></div>
+    </div>
+
+    <!-- Board Game Button and Table (hidden initially) -->
+    <div id="board-game-container" class="hidden">
+        <button id="board-game-btn" onclick="fetchBoardGame()">Board Game</button>
+        <div id="board-table-container" class="hidden">
+            <h2>Player Board</h2>
+            <div class="table-wrapper">
+                <table id="board-table"></table>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        let currentPlayerIndex = 0;
+        let players = [];
+        let roles = [];
+
+        // Function to start the game
+        function startGame() {
+            fetch('/start_game')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.start) {
+                        // Hide the "Start Mafia Game" button and show the "Reveal First Player" button
+                        document.getElementById('start-container').style.display = 'none';
+                        document.getElementById('next-container').style.display = 'block';
+                        document.getElementById('mask-container').innerHTML = `<p>${data.message}</p>`;
+                        players = data.players;
+                        roles = data.roles;
+                    }
+                })
+                .catch(error => console.error('Error starting game:', error));
+        }
+
+        // Function to reveal the first player
+        function revealFirstPlayer() {
+            if (currentPlayerIndex < players.length) {
+                const player = players[currentPlayerIndex];
+                const role = roles[currentPlayerIndex];
+                
+                // Show the current player's role
+                document.getElementById('mask-container').innerHTML = ` 
+                    <pre>${printMafiaMask(player)}</pre>
+                    <pre>${printOpenMask(player, role)}</pre>
+                `;
+
+                // Hide the "Reveal First Player" button and show blackout button
+                document.getElementById('next-btn').classList.add('hidden');
+                document.getElementById('next-player-container').classList.remove('hidden');
+                document.getElementById('blackout-btn').classList.remove('hidden');
+            }
+        }
+
+        // Function to make the screen black
+        function makeBlack() {
+            document.body.classList.add('blackout');
+            document.getElementById('next-player-btn').classList.remove('hidden');
+            document.getElementById('blackout-btn').classList.add('hidden');
+            document.getElementById('mask-container').innerHTML = ''; // Clear previous content
+        }
+
+        // Function to move to next player
+        function nextPlayer() {
+            currentPlayerIndex++;
+
+            if (currentPlayerIndex < players.length) {
+                const player = players[currentPlayerIndex];
+                const role = roles[currentPlayerIndex];
+
+                // Show the new player's role
+                document.getElementById('mask-container').innerHTML = `
+                    <pre>${printMafiaMask(player)}</pre>
+                    <pre>${printOpenMask(player, role)}</pre>
+                `;
+
+                // Reset the blackout and buttons
+                document.body.classList.remove('blackout');
+                document.getElementById('next-player-btn').classList.add('hidden');
+                document.getElementById('blackout-btn').classList.remove('hidden');
+            } else {
+                // All players have been revealed
+                fetch('/next_player')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('mask-container').innerHTML = "";
+                        document.getElementById('next-player-container').classList.add('hidden');
+
+                        // Display final roles to host
+                        const rolesContainer = document.getElementById('roles-container');
+                        rolesContainer.innerHTML = ""; // Clear previous roles
+
+                        // Generate and display player-role list
+                        for (let i = 0; i < players.length; i++) {
+                            rolesContainer.innerHTML += `Player ${players[i]}: ${roles[i]}<br>`;
+                        }
+
+                        document.getElementById('final-roles').classList.remove('hidden');
+
+                        // Show the "Board Game" button
+                        document.getElementById('board-game-container').classList.remove('hidden');
+                    });
+            }
+        }
+
+        // Fetching and displaying the player board data
+function fetchBoardGame() {
+    fetch('/api/players')
+        .then(response => response.json())
+        .then(data => {
+            const tableContainer = document.getElementById('board-table-container');
+            const table = document.getElementById('board-table');
+            
+            // Show the table container
+            tableContainer.classList.remove('hidden');
+
+            // Clear existing table data
+            table.innerHTML = '';
+
+            // Create table header
+            const header = document.createElement('tr');
+            header.innerHTML = `
+                <th>ID</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Fouls</th>
+                <th>Healed</th>
+                <th>Action</th> <!-- For the update button -->
+            `;
+            table.appendChild(header);
+
+            // Populate table rows with player data
+            data.forEach(player => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${player.id}</td>
+                    <td>${player.player_name}</td>
+                    <td>${player.role}</td>
+                    <td><input type="number" value="${player.fouls}" id="fouls-${player.id}" /></td>
+                    <td><input type="number" value="${player.healed}" id="healed-${player.id}" /></td>
+                    <td><button onclick="updatePlayer(${player.id})">Update</button></td>
+                `;
+                table.appendChild(row);
+            });
+        })
+        .catch(error => console.error('Error fetching board game data:', error));
+}
+
+// Function to update player data
+function updatePlayer(playerId) {
+    const fouls = document.getElementById(`fouls-${playerId}`).value;
+    const healed = document.getElementById(`healed-${playerId}`).value;
+
+    // Send updated data to the backend (Flask route)
+    fetch(`/update_player/${playerId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            fouls: fouls,
+            healed: healed
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Player data updated successfully!');
+        } else {
+            alert('Error updating player data.');
+        }
+    })
+    .catch(error => console.error('Error updating player data:', error));
+}
+
+
+        // Helper function to print mafia mask
+        function printMafiaMask(player) {
+            return ` 
+                -----  
+               /  M  \\  
+              /       \\ 
+             |    G    | 
+              \\       / 
+               \\__H__/  
+                  |
+                  |
+                  |
+                  |
+                  |
+                  |
+            `;
+        }
+
+        // Helper function to print open mask with role
+        function printOpenMask(player, role) {
+            return `
+        player ${player}: ${role}      
+                        ------      
+                       /  M   \\     
+                      /        \\    
+          -----------|    G     |    
+                      \\        /     
+                       \\__H___/      
+            `;
+        }
+    </script>
+    
+</body>
+</html>
